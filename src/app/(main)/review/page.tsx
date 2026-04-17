@@ -10,7 +10,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	Suspense,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { toast } from "sonner";
 import { ShadowPanel } from "@/components/shadow-panel";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -59,7 +66,29 @@ function normalizeAnswer(s: string): string {
 		.replace(/[.,!?;:'"()]/g, "");
 }
 
+function ReviewLoading() {
+	return (
+		<div className="space-y-4">
+			<Skeleton className="h-8 w-32" />
+			<Skeleton className="h-64 w-full rounded-xl" />
+			<div className="flex gap-2">
+				{[1, 2, 3, 4].map((i) => (
+					<Skeleton key={i} className="h-10 flex-1" />
+				))}
+			</div>
+		</div>
+	);
+}
+
 export default function ReviewPage() {
+	return (
+		<Suspense fallback={<ReviewLoading />}>
+			<ReviewContent />
+		</Suspense>
+	);
+}
+
+function ReviewContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const deckId = searchParams.get("deckId");
