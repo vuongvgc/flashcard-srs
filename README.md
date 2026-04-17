@@ -163,17 +163,92 @@ vocabulary,từ vựng,"Build your vocabulary daily",general
 
 ## Deploy on Vercel
 
-1. Push to GitHub
-2. Import project on [Vercel](https://vercel.com)
-3. Add environment variables in Vercel dashboard
-4. Vercel auto-detects Next.js and deploys
+### First-time Setup
 
-Required env vars for production:
+1. Install Vercel CLI: `npm i -g vercel`
+2. Login: `vercel login`
+3. Link project: `vercel link --yes`
+4. Add env vars (without quotes):
 
-- `DATABASE_URL` — Neon connection string
-- `AUTH_SECRET` — generated secret
-- `ELEVENLABS_API_KEY` — (optional) for TTS
-- `BLOB_READ_WRITE_TOKEN` — (optional) auto-provided by Vercel Blob
+```bash
+echo "postgresql://user:pass@host/db" | vercel env add DATABASE_URL production --force
+echo "your-secret" | vercel env add AUTH_SECRET production --force
+echo "your-key" | vercel env add ELEVENLABS_API_KEY production --force
+echo "your-token" | vercel env add BLOB_READ_WRITE_TOKEN production --force
+```
+
+5. Deploy: `vercel --prod`
+
+### Recurring Deploy Flow
+
+```bash
+# 1. Commit & push
+git add <files> && git commit -m "description" && git push
+
+# 2. Deploy to production
+vercel --prod
+
+# Or preview first (staging URL)
+vercel
+```
+
+### Environment Variables
+
+| Variable                | Required | Description                                     |
+| ----------------------- | -------- | ----------------------------------------------- |
+| `DATABASE_URL`          | Yes      | PostgreSQL connection string (Neon recommended) |
+| `AUTH_SECRET`           | Yes      | Auth secret (`npx auth secret` to generate)     |
+| `ELEVENLABS_API_KEY`    | No       | ElevenLabs API key for high-quality TTS         |
+| `BLOB_READ_WRITE_TOKEN` | No       | Vercel Blob token for audio caching             |
+
+### Database Migrations
+
+When you change `prisma/schema.prisma`:
+
+```bash
+# Local: create migration
+npx prisma migrate dev --name describe_change
+
+# Production: applied automatically on deploy (via vercel.json buildCommand)
+```
+
+### Build Command
+
+Configured in `vercel.json`:
+
+```json
+{
+  "buildCommand": "prisma generate && prisma migrate deploy && next build"
+}
+```
+
+This ensures Prisma client generation and DB migrations run before each build.
+
+### Multi-GitHub Account Setup
+
+If using multiple GitHub accounts on one machine, configure `~/.ssh/config`:
+
+```
+# Default account (e.g. work)
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519
+
+# Second account (e.g. personal)
+Host github-personal
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_personal
+```
+
+Then set remote per project:
+
+```bash
+git remote set-url origin git@github-personal:username/repo.git
+git config user.name "username"
+git config user.email "email@example.com"
+```
 
 ## License
 
