@@ -49,6 +49,7 @@ model CardState {
   id             String    @id @default(cuid())
   card_id        String
   user_id        String
+  direction      String    @default("normal") // "normal" = front→back, "reverse" = back→front
   stability      Float     @default(0)
   difficulty     Float     @default(0)
   elapsed_days   Float     @default(0)
@@ -61,7 +62,7 @@ model CardState {
   card           Card      @relation(fields: [card_id], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@unique([card_id, user_id])
+  @@unique([card_id, user_id, direction])
   @@index([user_id, due])
 }
 

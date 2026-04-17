@@ -39,9 +39,12 @@ export async function POST(
 		},
 	});
 
-	// Create initial CardState for the user
-	await prisma.cardState.create({
-		data: { card_id: card.id, user_id: userId },
+	// Create initial CardState for both directions
+	await prisma.cardState.createMany({
+		data: [
+			{ card_id: card.id, user_id: userId, direction: "normal" },
+			{ card_id: card.id, user_id: userId, direction: "reverse" },
+		],
 	});
 
 	return NextResponse.json(card, { status: 201 });

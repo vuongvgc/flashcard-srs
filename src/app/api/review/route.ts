@@ -5,21 +5,25 @@ import { prisma } from "@/lib/prisma";
 
 const f = fsrs();
 
-// GET /api/review?deckId=xxx - Get due cards for review
+// GET /api/review?deckId=xxx&tag=xxx - Get due cards for review
 export async function GET(req: Request) {
 	const { userId, error } = await getAuthUser();
 	if (error) return error;
 
 	const { searchParams } = new URL(req.url);
 	const deckId = searchParams.get("deckId");
+	const tag = searchParams.get("tag");
 
-	const where: Record<string, unknown> = {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const where: any = {
 		user_id: userId,
 		due: { lte: new Date() },
 	};
 
-	if (deckId) {
-		where.card = { deck_id: deckId };
+	if (deckId || tag) {
+		where.card = {};
+		if (deckId) where.card.deck_id = deckId;
+		if (tag) where.card.tags = { contains: tag };
 	}
 
 	const states = await prisma.cardState.findMany({

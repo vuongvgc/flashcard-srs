@@ -86,9 +86,12 @@ export async function POST(
 		),
 	);
 
-	// Create CardStates for all new cards
+	// Create CardStates for both directions
 	await prisma.cardState.createMany({
-		data: cards.map((c) => ({ card_id: c.id, user_id: userId })),
+		data: cards.flatMap((c) => [
+			{ card_id: c.id, user_id: userId, direction: "normal" },
+			{ card_id: c.id, user_id: userId, direction: "reverse" },
+		]),
 	});
 
 	return NextResponse.json(

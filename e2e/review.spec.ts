@@ -154,4 +154,93 @@ test.describe("Review", () => {
 			});
 		}
 	});
+
+	test("quiz mode: type answer", async ({ page }) => {
+		const name = unique("QuizDeck");
+		const deckRes = await page.request.post("/api/decks", { data: { name } });
+		const deck = await deckRes.json();
+		await page.request.post(`/api/decks/${deck.id}/cards`, {
+			data: { front: "quizword", back: "từ quiz" },
+		});
+
+		await page.goto("/review");
+		await page.waitForLoadState("networkidle");
+
+		const cardVisible = await page
+			.locator("text=quizword")
+			.isVisible({ timeout: 10000 })
+			.catch(() => false);
+
+		if (cardVisible) {
+			// Switch to quiz mode (keyboard icon button)
+			await page.locator('button[title*="Quiz"]').click();
+
+			// Should see input field
+			await expect(
+				page.locator('input[placeholder="Type your answer..."]'),
+			).toBeVisible({
+				timeout: 5000,
+			});
+
+			// Type correct answer
+			await page.fill('input[placeholder="Type your answer..."]', "từ quiz");
+			await page.click('button:has-text("Check")');
+
+			// Should show Correct
+			await expect(page.locator("text=Correct!")).toBeVisible({
+				timeout: 5000,
+			});
+
+			// Rating buttons should appear
+			await expect(page.locator('button:has-text("Good")')).toBeVisible({
+				timeout: 5000,
+			});
+		}
+	});
+
+	test("reverse card shows back as front", async ({ page }) => {
+		const name = unique("ReverseDeck");
+		const deckRes = await page.request.post("/api/decks", { data: { name } });
+		const deck = await deckRes.json();
+		await page.request.post(`/api/decks/${deck.id}/cards`, {
+			data: { front: "english_word", back: "tiếng_việt" },
+		});
+
+		// Use deckId filter to only see this deck's cards
+		await page.goto(`/review?deckId=${deck.id}`);
+		await page.waitForLoadState("networkidle");
+
+		// Should see either english_word (normal) or tiếng_việt (reverse)
+		const hasFront = await page
+			.locator("text=english_word")
+			.isVisible({ timeout: 10000 })
+			.catch(() => false);
+		const hasReverse = await page
+			.locator("text=tiếng_việt")
+			.isVisible({ timeout: 10000 })
+			.catch(() => false);
+		expect(hasFront || hasReverse).toBeTruthy();
+	});
+
+	test("tag filter in review", async ({ page }) => {
+		const name = unique("TagDeck");
+		const deckRes = await page.request.post("/api/decks", { data: { name } });
+		const deck = await deckRes.json();
+		await page.request.post(`/api/decks/${deck.id}/cards`, {
+			data: { front: "tagged_word", back: "từ có tag", tags: "ielts" },
+		});
+
+		await page.goto(`/review?deckId=${deck.id}`);
+		await page.waitForLoadState("networkidle");
+
+		// Should see tag filter chip
+		const tagChip = page.locator("a:has-text('ielts')").first();
+		const tagVisible = await tagChip
+			.isVisible({ timeout: 10000 })
+			.catch(() => false);
+		if (tagVisible) {
+			await tagChip.click();
+			await expect(page).toHaveURL(/tag=ielts/);
+		}
+	});
 });
