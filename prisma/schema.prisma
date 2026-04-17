@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  password_hash String
+  created_at    DateTime    @default(now())
+  decks         Deck[]
+  card_states   CardState[]
+  review_logs   ReviewLog[]
+  streak        Streak?
+}
+
+model Deck {
+  id          String   @id @default(cuid())
+  user_id     String
+  name        String
+  description String?
+  created_at  DateTime @default(now())
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  cards       Card[]
+
+  @@index([user_id])
+}
+
+model Card {
+  id         String      @id @default(cuid())
+  deck_id    String
+  front      String
+  back       String
+  example    String?
+  tags       String?
+  audio_url  String?
+  created_at DateTime    @default(now())
+  deck       Deck        @relation(fields: [deck_id], references: [id], onDelete: Cascade)
+  states     CardState[]
+  reviews    ReviewLog[]
+
+  @@index([deck_id])
+}
+
+model CardState {
+  id             String    @id @default(cuid())
+  card_id        String
+  user_id        String
+  stability      Float     @default(0)
+  difficulty     Float     @default(0)
+  elapsed_days   Float     @default(0)
+  scheduled_days Float     @default(0)
+  reps           Int       @default(0)
+  lapses         Int       @default(0)
+  state          Int       @default(0)
+  due            DateTime  @default(now())
+  last_review    DateTime?
+  card           Card      @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([card_id, user_id])
+  @@index([user_id, due])
+}
+
+model ReviewLog {
+  id          String   @id @default(cuid())
+  card_id     String
+  user_id     String
+  rating      Int
+  reviewed_at DateTime @default(now())
+  card        Card     @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, reviewed_at])
+}
+
+model Streak {
+  id               String    @id @default(cuid())
+  user_id          String    @unique
+  current_streak   Int       @default(0)
+  longest_streak   Int       @default(0)
+  last_review_date DateTime?
+  user             User      @relation(fields: [user_id], references: [id])
+}
+
+model AudioCache {
+  id         String   @id @default(cuid())
+  text_hash  String   @unique
+  text       String
+  lang       String   @default("en")
+  voice_id   String
+  blob_url   String
+  created_at DateTime @default(now())
+}
