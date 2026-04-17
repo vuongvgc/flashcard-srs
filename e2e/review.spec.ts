@@ -103,10 +103,11 @@ test.describe("Review", () => {
 				timeout: 5000,
 			});
 
-			// Listen button should be visible after flip
-			await expect(page.locator("text=Listen")).toBeVisible({
-				timeout: 5000,
-			});
+			// Listen buttons should be visible for both sides
+			await expect(page.locator("text=Front")).toBeVisible({ timeout: 5000 });
+			await expect(page.locator("text=Back")).toBeVisible({ timeout: 5000 });
+			const listenButtons = page.locator("text=Listen");
+			await expect(listenButtons).toHaveCount(2, { timeout: 5000 });
 		}
 	});
 

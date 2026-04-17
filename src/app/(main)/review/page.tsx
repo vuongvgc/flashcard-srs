@@ -217,7 +217,12 @@ export default function ReviewPage() {
 			</div>
 
 			{/* Shadow panel (visible after flip) */}
-			{flipped && <ShadowPanel text={card.card.front} />}
+			{flipped && (
+				<div className="space-y-3">
+					<ShadowPanel text={card.card.front} label="Front" />
+					<ShadowPanel text={card.card.back} label="Back" />
+				</div>
+			)}
 
 			{/* Rating buttons (visible after flip) */}
 			{flipped && (

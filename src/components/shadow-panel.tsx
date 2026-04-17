@@ -10,10 +10,11 @@ import { useTTS } from "@/lib/use-tts";
 
 interface ShadowPanelProps {
 	text: string;
+	label?: string;
 	cachedAudioUrl?: string | null;
 }
 
-export function ShadowPanel({ text, cachedAudioUrl }: ShadowPanelProps) {
+export function ShadowPanel({ text, label, cachedAudioUrl }: ShadowPanelProps) {
 	const [expanded, setExpanded] = useState(false);
 	const tts = useTTS({ onError: (msg) => toast.error(msg) });
 	const recorder = useRecorder();
@@ -45,6 +46,9 @@ export function ShadowPanel({ text, cachedAudioUrl }: ShadowPanelProps) {
 
 	return (
 		<div className="space-y-2">
+			{label && (
+				<p className="text-xs font-medium text-muted-foreground">{label}</p>
+			)}
 			{/* Toggle + Listen button row */}
 			<div className="flex items-center gap-2">
 				<Button
