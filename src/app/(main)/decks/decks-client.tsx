@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical, Plus, Trash2, Upload } from "lucide-react";
+import { MoreVertical, Pause, Play, Plus, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,6 +27,7 @@ interface Deck {
 	id: string;
 	name: string;
 	description: string | null;
+	review_enabled: boolean;
 	_count: { cards: number };
 }
 
@@ -70,6 +71,20 @@ export function DecksClient({ initialDecks }: { initialDecks: Deck[] }) {
 			toast.success("Deck deleted");
 		} else {
 			toast.error("Failed to delete");
+		}
+	}
+
+	async function handleToggleReview(id: string, currentEnabled: boolean) {
+		const res = await fetch(`/api/decks/${id}`, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ review_enabled: !currentEnabled }),
+		});
+		if (res.ok) {
+			router.refresh();
+			toast.success(!currentEnabled ? "Review enabled" : "Review paused");
+		} else {
+			toast.error("Failed to update");
 		}
 	}
 
@@ -174,10 +189,19 @@ export function DecksClient({ initialDecks }: { initialDecks: Deck[] }) {
 				<div className="space-y-3">
 					{initialDecks.map((deck) => (
 						<Link key={deck.id} href={`/decks/${deck.id}`} className="block">
-							<Card className="transition-colors hover:bg-accent">
+							<Card
+								className={`transition-colors hover:bg-accent ${!deck.review_enabled ? "opacity-60" : ""}`}
+							>
 								<CardHeader className="flex flex-row items-center justify-between p-4">
 									<div>
-										<CardTitle className="text-base">{deck.name}</CardTitle>
+										<div className="flex items-center gap-2">
+											<CardTitle className="text-base">{deck.name}</CardTitle>
+											{!deck.review_enabled && (
+												<span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+													Paused
+												</span>
+											)}
+										</div>
 										{deck.description && (
 											<p className="text-sm text-muted-foreground mt-0.5">
 												{deck.description}
@@ -198,6 +222,24 @@ export function DecksClient({ initialDecks }: { initialDecks: Deck[] }) {
 											<MoreVertical className="h-4 w-4" />
 										</DropdownMenuTrigger>
 										<DropdownMenuContent align="end">
+											<DropdownMenuItem
+												onClick={(e) => {
+													e.preventDefault();
+													handleToggleReview(deck.id, deck.review_enabled);
+												}}
+											>
+												{deck.review_enabled ? (
+													<>
+														<Pause className="mr-2 h-4 w-4" />
+														Pause Review
+													</>
+												) : (
+													<>
+														<Play className="mr-2 h-4 w-4" />
+														Enable Review
+													</>
+												)}
+											</DropdownMenuItem>
 											<DropdownMenuItem
 												onClick={(e) => {
 													e.preventDefault();

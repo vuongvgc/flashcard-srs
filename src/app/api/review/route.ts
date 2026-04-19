@@ -18,13 +18,11 @@ export async function GET(req: Request) {
 	const where: any = {
 		user_id: userId,
 		due: { lte: new Date() },
+		card: { deck: { review_enabled: true } },
 	};
 
-	if (deckId || tag) {
-		where.card = {};
-		if (deckId) where.card.deck_id = deckId;
-		if (tag) where.card.tags = { contains: tag };
-	}
+	if (deckId) where.card.deck_id = deckId;
+	if (tag) where.card.tags = { contains: tag };
 
 	const states = await prisma.cardState.findMany({
 		where,
