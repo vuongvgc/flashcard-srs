@@ -4,23 +4,30 @@ Web app tự học tiếng Anh thông qua flashcard, sử dụng **Spaced Repeti
 
 ## Tech Stack
 
-| Layer         | Technology                                |
-| ------------- | ----------------------------------------- |
-| Framework     | Next.js 15 (App Router)                   |
-| UI            | shadcn/ui + Tailwind CSS v4 + Dark mode   |
-| Animation     | Framer Motion (swipe gestures, card flip) |
-| Database      | PostgreSQL on Neon                        |
-| ORM           | Prisma 7                                  |
-| Auth          | NextAuth.js v5 (Credentials + JWT)        |
-| SRS           | ts-fsrs (FSRS algorithm)                  |
-| TTS           | ElevenLabs API → Web Speech API fallback  |
-| Audio Storage | Vercel Blob                               |
-| Deploy        | Vercel                                    |
+| Layer         | Technology                                      |
+| ------------- | ----------------------------------------------- |
+| Framework     | Next.js 16 (App Router) + React 19              |
+| UI            | shadcn/ui (on @base-ui/react) + Tailwind CSS v4 |
+| Animation     | Framer Motion (swipe gestures, card flip)       |
+| Database      | PostgreSQL on Neon                              |
+| ORM           | Prisma 7 (with PrismaPg adapter)                |
+| Auth          | NextAuth.js v5 (Credentials + JWT)              |
+| SRS           | ts-fsrs (FSRS algorithm)                        |
+| TTS           | ElevenLabs API → Web Speech API fallback        |
+| Audio Storage | Vercel Blob (private, proxied)                  |
+| Testing       | Playwright E2E (25 tests across 6 suites)       |
+| Deploy        | Vercel                                          |
+
+> **For AI agents / contributors:** read [`AGENTS.md`](./AGENTS.md) and [`docs/`](./docs/) before making changes.
 
 ## Features
 
 - **Flashcard Review** — Flip card, swipe left/right (Framer Motion), rate Again/Hard/Good/Easy
 - **FSRS Algorithm** — ts-fsrs tính due date, tự động schedule review
+- **Reverse Cards** — Mỗi card có 2 chiều review độc lập (front→back và back→front)
+- **Quiz Mode** — Bật trong review: gõ đáp án hoặc multiple choice (4 lựa chọn)
+- **Tag Filtering** — Review theo tag qua query param `?tag=xxx`
+- **Deck Toggle** — Pause/enable từng deck, card của deck bị pause sẽ ẩn khỏi review
 - **TTS** — ElevenLabs đọc phát âm, cache audio vào Vercel Blob (chỉ tốn credit 1 lần/từ). Fallback sang Web Speech API khi hết credit hoặc API lỗi
 - **Shadowing** — Nghe audio gốc → ghi âm giọng mình (MediaRecorder) → nghe lại so sánh → tự đánh giá
 - **CSV Import** — Upload CSV (front, back, example, tags, audio_url) → tạo cards
@@ -182,15 +189,17 @@ echo "your-token" | vercel env add BLOB_READ_WRITE_TOKEN production --force
 ### Recurring Deploy Flow
 
 ```bash
-# 1. Commit & push
+# 1. If you changed prisma/schema.prisma, apply migration to prod FIRST
+npx prisma migrate deploy
+
+# 2. Stage specific files (NEVER `git add .`)
 git add <files> && git commit -m "description" && git push
 
-# 2. Deploy to production
+# 3. Deploy to production
 vercel --prod
-
-# Or preview first (staging URL)
-vercel
 ```
+
+> **Important:** migrations are NOT run in the Vercel build (Neon's advisory lock times out). Always run `npx prisma migrate deploy` manually before `vercel --prod`. See [`docs/deploy.md`](./docs/deploy.md) and [`docs/gotchas.md`](./docs/gotchas.md).
 
 ### Environment Variables
 
@@ -203,13 +212,12 @@ vercel
 
 ### Database Migrations
 
-When you change `prisma/schema.prisma`:
-
 ```bash
 # Local: create migration
 npx prisma migrate dev --name describe_change
 
-# Production: applied automatically on deploy (via vercel.json buildCommand)
+# Production: apply manually BEFORE deploy (not during build)
+npx prisma migrate deploy
 ```
 
 ### Build Command
@@ -217,12 +225,10 @@ npx prisma migrate dev --name describe_change
 Configured in `vercel.json`:
 
 ```json
-{
-  "buildCommand": "prisma generate && prisma migrate deploy && next build"
-}
+{ "buildCommand": "prisma generate && next build" }
 ```
 
-This ensures Prisma client generation and DB migrations run before each build.
+Migrations intentionally excluded — run them manually. See [`docs/gotchas.md`](./docs/gotchas.md) for the full story.
 
 ### Multi-GitHub Account Setup
 
